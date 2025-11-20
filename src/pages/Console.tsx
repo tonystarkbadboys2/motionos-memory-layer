@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { memoryStream, MemoryEvent } from "@/utils/memoryStream";
 
 interface Memory {
   id: string;
@@ -42,6 +43,33 @@ const Console = () => {
       timestamp: new Date(Date.now() - 1000 * 60 * 15),
     },
   ]);
+
+  useEffect(() => {
+    // Start the memory stream
+    memoryStream.start();
+    
+    // Subscribe to new memory events
+    const unsubscribe = memoryStream.subscribe((event: MemoryEvent) => {
+      if (event.type === 'store' && event.content) {
+        const newMemory: Memory = {
+          id: event.id,
+          userId: event.userId,
+          sessionId: event.sessionId || 'default',
+          content: event.content,
+          tags: ['realtime', 'stream'],
+          source: 'websocket',
+          timestamp: event.timestamp,
+        };
+        
+        setMemories(prev => [newMemory, ...prev]);
+        toast.success("New memory received via stream");
+      }
+    });
+    
+    return () => {
+      unsubscribe();
+    };
+  }, []);
 
   const handleStoreMemory = () => {
     if (!userId || !content) {
@@ -163,17 +191,24 @@ const Console = () => {
 
           {/* Memory List */}
           <div className="glass-panel rounded-xl p-6">
-            <h2 className="text-xl font-bold font-mono text-foreground mb-6">Stored Memories</h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold font-mono text-foreground">Stored Memories</h2>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-primary animate-pulse-glow"></div>
+                <span className="text-xs font-mono text-primary">Streaming</span>
+              </div>
+            </div>
             <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
               {memories.length === 0 ? (
                 <p className="text-muted-foreground font-mono text-sm text-center py-8">
                   No memories stored yet
                 </p>
               ) : (
-                memories.map((memory) => (
+                memories.map((memory, index) => (
                   <div
                     key={memory.id}
-                    className="p-4 rounded-lg bg-secondary/30 border border-border/50 hover:border-primary/30 transition-all"
+                    className="p-4 rounded-lg bg-secondary/30 border border-border/50 hover:border-primary/30 transition-all animate-slide-in-up"
+                    style={{ animationDelay: `${Math.min(index * 0.05, 0.5)}s` }}
                   >
                     <div className="flex items-start justify-between mb-2">
                       <span className="font-mono text-xs text-primary">{memory.id}</span>
