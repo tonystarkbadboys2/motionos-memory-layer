@@ -1,20 +1,62 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, Play } from "lucide-react";
 import { toast } from "sonner";
+import { memoryStream, MemoryEvent } from "@/utils/memoryStream";
 
 const ApiPlayground = () => {
   const [apiKey, setApiKey] = useState("sk_test_4eC39HqLyjWDarjtT1zdp7dc");
   const [copied, setCopied] = useState<string | null>(null);
+  const [apiCallCount, setApiCallCount] = useState(0);
+  const [lastResponse, setLastResponse] = useState<any>(null);
+  const [isExecuting, setIsExecuting] = useState(false);
+
+  useEffect(() => {
+    memoryStream.start();
+    
+    const unsubscribe = memoryStream.subscribe((event: MemoryEvent) => {
+      setApiCallCount(prev => prev + 1);
+    });
+    
+    return () => {
+      unsubscribe();
+    };
+  }, []);
 
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
     setCopied(id);
     toast.success("Copied to clipboard");
     setTimeout(() => setCopied(null), 2000);
+  };
+
+  const executeApiCall = (exampleId: string) => {
+    setIsExecuting(true);
+    
+    // Simulate API call
+    setTimeout(() => {
+      const timestamp = new Date().toISOString();
+      const mockResponse = {
+        status: "success",
+        data: {
+          memory_id: `mem_${Date.now()}`,
+          user_id: "user_12345",
+          session_id: "sess_abc123",
+          content: exampleId === 'store' ? "User prefers dark mode" : "Retrieved memory data",
+          tags: ["preference", "ui"],
+          created_at: timestamp,
+          expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+        }
+      };
+      
+      setLastResponse(mockResponse);
+      setApiCallCount(prev => prev + 1);
+      setIsExecuting(false);
+      toast.success(`API call executed: ${exampleId}`);
+    }, 1200);
   };
 
   const codeExamples = [
@@ -68,7 +110,13 @@ const ApiPlayground = () => {
 
         {/* API Key Section */}
         <div className="glass-panel rounded-xl p-6">
-          <h2 className="text-xl font-bold font-mono text-foreground mb-4">API Key</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold font-mono text-foreground">API Key</h2>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-primary animate-pulse-glow"></div>
+              <span className="text-xs font-mono text-primary">{apiCallCount} calls today</span>
+            </div>
+          </div>
           <div className="space-y-2">
             <Label htmlFor="apiKey" className="font-mono text-sm">
               Your API Key
@@ -125,18 +173,30 @@ const ApiPlayground = () => {
                     </span>
                   </div>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => copyToClipboard(example.code, example.id)}
-                  className="font-mono border-border"
-                >
-                  {copied === example.id ? (
-                    <Check className="h-4 w-4" />
-                  ) : (
-                    <Copy className="h-4 w-4" />
-                  )}
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => executeApiCall(example.id)}
+                    disabled={isExecuting}
+                    className="font-mono border-border bg-primary/10 hover:bg-primary/20"
+                  >
+                    <Play className="h-4 w-4 mr-1" />
+                    {isExecuting ? "Running..." : "Execute"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => copyToClipboard(example.code, example.id)}
+                    className="font-mono border-border"
+                  >
+                    {copied === example.id ? (
+                      <Check className="h-4 w-4" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
               </div>
               <div className="bg-background/50 rounded-lg p-4 border border-border/50">
                 <pre className="text-xs font-mono text-foreground overflow-x-auto">
@@ -147,15 +207,22 @@ const ApiPlayground = () => {
           ))}
         </div>
 
-        {/* Response Example */}
+        {/* Live Response */}
         <div className="glass-panel rounded-xl p-6">
-          <h3 className="text-lg font-bold font-mono text-foreground mb-4">
-            Example Response
-          </h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold font-mono text-foreground">
+              {lastResponse ? "Live Response" : "Example Response"}
+            </h3>
+            {lastResponse && (
+              <span className="text-xs font-mono text-primary animate-pulse-glow">
+                ● Just executed
+              </span>
+            )}
+          </div>
           <div className="bg-background/50 rounded-lg p-4 border border-border/50">
             <pre className="text-xs font-mono text-foreground overflow-x-auto">
               <code>
-                {`{
+                {lastResponse ? JSON.stringify(lastResponse, null, 2) : `{
   "status": "success",
   "data": {
     "memory_id": "mem_a1b2c3d4",
