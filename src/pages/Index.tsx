@@ -1,8 +1,40 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Database, Clock, Activity, Code } from "lucide-react";
+import { useEffect, useState } from "react";
+import { memoryStream, MemoryEvent } from "@/utils/memoryStream";
+import { formatDistanceToNow } from "date-fns";
 
 const Index = () => {
+  const [totalMemories, setTotalMemories] = useState(1247893);
+  const [apiCalls, setApiCalls] = useState(45230);
+  const [activeSessions, setActiveSessions] = useState(147);
+  const [recentActivity, setRecentActivity] = useState<MemoryEvent[]>([]);
+
+  useEffect(() => {
+    memoryStream.start();
+
+    const unsubscribe = memoryStream.subscribe((event) => {
+      // Update metrics based on event type
+      if (event.type === 'store') {
+        setTotalMemories(prev => prev + 1);
+        setApiCalls(prev => prev + 1);
+      } else if (event.type === 'retrieve') {
+        setApiCalls(prev => prev + 1);
+      } else if (event.type === 'session_start') {
+        setActiveSessions(prev => prev + 1);
+      }
+
+      // Add to recent activity (keep last 5)
+      setRecentActivity(prev => [event, ...prev].slice(0, 5));
+    });
+
+    return () => {
+      unsubscribe();
+      memoryStream.stop();
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-background grid-bg">
       {/* Header */}
@@ -36,7 +68,32 @@ const Index = () => {
             MotionOS lets AI applications store, retrieve, and manage persistent memory—so your AI doesn't forget between sessions.
           </p>
 
-          <div className="flex gap-4 justify-center pt-4">
+          {/* Live Stats */}
+          <div className="grid grid-cols-3 gap-6 max-w-3xl mx-auto pt-8">
+            <div className="glass-panel rounded-xl p-6 border border-primary/20">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-mono text-muted-foreground">Memories Stored</p>
+                <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+              </div>
+              <p className="text-3xl font-bold font-mono text-foreground">{totalMemories.toLocaleString()}</p>
+            </div>
+            <div className="glass-panel rounded-xl p-6 border border-accent/20">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-mono text-muted-foreground">API Calls Today</p>
+                <div className="w-2 h-2 rounded-full bg-accent animate-pulse"></div>
+              </div>
+              <p className="text-3xl font-bold font-mono text-foreground">{apiCalls.toLocaleString()}</p>
+            </div>
+            <div className="glass-panel rounded-xl p-6 border border-primary/20">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-mono text-muted-foreground">Active Sessions</p>
+                <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+              </div>
+              <p className="text-3xl font-bold font-mono text-foreground">{activeSessions}</p>
+            </div>
+          </div>
+
+          <div className="flex gap-4 justify-center pt-8">
             <Link to="/login">
               <Button size="lg" className="font-mono text-base">
                 Get Started <ArrowRight className="ml-2 h-4 w-4" />
@@ -47,6 +104,54 @@ const Index = () => {
                 View Demo
               </Button>
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Live Activity Feed */}
+      <section className="max-w-4xl mx-auto px-6 py-12">
+        <div className="glass-panel rounded-xl p-8 border border-primary/20">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-2xl font-bold font-mono">Live Memory Stream</h3>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+              <span className="text-sm font-mono text-muted-foreground">Streaming</span>
+            </div>
+          </div>
+          <div className="space-y-3">
+            {recentActivity.length === 0 ? (
+              <p className="text-muted-foreground text-center py-8 font-mono">Waiting for memory events...</p>
+            ) : (
+              recentActivity.map((event) => (
+                <div 
+                  key={event.id} 
+                  className="glass-panel rounded-lg p-4 border border-border/50 hover:border-primary/30 transition-all animate-fade-in"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-2 h-2 rounded-full ${
+                        event.status === 'success' ? 'bg-primary' : 
+                        event.status === 'warning' ? 'bg-accent' : 'bg-destructive'
+                      }`}></div>
+                      <span className="font-mono text-sm text-foreground">
+                        {event.type === 'store' ? '📝 Memory Stored' :
+                         event.type === 'retrieve' ? '🔍 Memory Retrieved' :
+                         event.type === 'session_start' ? '🚀 Session Started' : event.type}
+                      </span>
+                    </div>
+                    <span className="text-xs font-mono text-muted-foreground">
+                      {formatDistanceToNow(event.timestamp, { addSuffix: true })}
+                    </span>
+                  </div>
+                  <div className="mt-2 ml-5">
+                    <p className="text-sm text-muted-foreground font-mono">{event.userId}</p>
+                    {event.content && (
+                      <p className="text-sm text-foreground mt-1">{event.content}</p>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </section>
