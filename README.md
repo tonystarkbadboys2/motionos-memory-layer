@@ -1,73 +1,120 @@
-# Welcome to your Lovable project
+MotionOS — Helpdesk Memory Plugin (MVP)
 
-## Project info
+The Memory Infrastructure Layer for AI Workflows
 
-**URL**: https://lovable.dev/projects/92b01306-1cc7-47a3-ba7b-e50e85bc5d90
+This repo contains the Lovable-generated MVP for MotionOS — a lightweight demo of how our helpdesk memory layer works. It shows the UI and basic workflow for how support teams get persistent memory, instant recall, and smart context suggestions inside their tools.
 
-## How can I edit this code?
+MotionOS is building the memory layer for the AI era, letting agents remember past conversations, issues, and user context across sessions, apps, and workflows.
 
-There are several ways of editing your application.
+This MVP is the frontend demonstration of that concept.
 
-**Use Lovable**
+⸻
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/92b01306-1cc7-47a3-ba7b-e50e85bc5d90) and start prompting.
+🚀 Features (MVP)
 
-Changes made via Lovable will be committed automatically to this repo.
+This interface demonstrates the fundamentals of MotionOS:
 
-**Use your preferred IDE**
+• Memory Recall Panel
+Shows past conversations, issue summaries, and user context in a clean sidebar.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+• Smart Suggestions
+Displays similar past tickets and suggested replies (placeholder logic in UI).
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+• Persistent Context
+Illustrates how a helpdesk agent sees customer history instantly when a ticket loads.
 
-Follow these steps:
+• Clean, fast UI
+Built with Vite, React, TypeScript, Tailwind, and shadcn-ui.
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
+This is a demo UI, not the full backend memory engine yet — it lets the team visualize the wedge we’re shipping.
+
+⸻
+
+🧠 What MotionOS Actually Does
+
+This project is the frontend for MotionOS v1, which will eventually connect to:
+
+• NoSQL + S3 for memory storage
+• FAISS + BM25 for hybrid retrieval
+• A summarization + compression intelligence layer
+• A FastAPI gateway that exposes the memory engine via SDK
+
+The MVP shows how a helpdesk team will experience MotionOS.
+
+⸻
+
+📦 Tech Stack
+
+Built automatically via Lovable:
+
+• Vite
+• React
+• TypeScript
+• TailwindCSS
+• shadcn-ui
+
+Backend integration (coming in real MotionOS) will use:
+
+• FastAPI
+• Python
+• NoSQL (MongoDB / DynamoDB)
+• S3
+• FAISS + BM25 hybrid retrieval
+
+⸻
+
+⚙️ Local Setup
+
+If editing locally:# Clone the repo
 git clone <YOUR_GIT_URL>
 
-# Step 2: Navigate to the project directory.
+# Enter project folder
 cd <YOUR_PROJECT_NAME>
 
-# Step 3: Install the necessary dependencies.
+# Install dependencies
 npm i
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start dev server
 npm run dev
-```
+This launches a live preview with hot reload.
 
-**Edit a file directly in GitHub**
+⸻
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+💽 Deployment
 
-**Use GitHub Codespaces**
+To publish:
+	1.	Open the project in Lovable
+	2.	Click Share → Publish
+	3.	Optionally attach your custom domain under
+Project → Settings → Domains
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+⸻
 
-## What technologies are used for this project?
+🛠 Editing Options
 
-This project is built with:
+You can edit via:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+• Lovable (AI auto-commits to GitHub)
+• Local IDE
+• GitHub in-browser editor
+• GitHub Codespaces
 
-## How can I deploy this project?
+⸻
 
-Simply open [Lovable](https://lovable.dev/projects/92b01306-1cc7-47a3-ba7b-e50e85bc5d90) and click on Share -> Publish.
+📌 Status
 
-## Can I connect a custom domain to my Lovable project?
+This is a UI demo MVP for:
+	•	Team alignment
+	•	Investor previews
+	•	Early user feedback
+	•	Connecting backend memory engine later
 
-Yes, you can!
+It helps us communicate the MotionOS wedge clearly:
+Helpdesk Memory Plugin — instant recall, consistent support, smarter AI.
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+⸻
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+📄 License
+
+Proprietary. Copyright © MotionOS 2025.
+All rights reserved.
