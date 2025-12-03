@@ -1,1 +1,13 @@
 project_id = "tshejrkjybjhvpujbmsk"
+
+[functions.chat]
+verify_jwt = false
+
+[functions.memory-store]
+verify_jwt = false
+
+[functions.memory-retrieve]
+verify_jwt = false
+
+[functions.memory-clear]
+verify_jwt = false
