@@ -1,6 +1,7 @@
 MotionOS — Helpdesk Memory Plugin (MVP)
 
 The Memory Infrastructure Layer for AI Workflows
+**URL**: https://lovable.dev/projects/92b01306-1cc7-47a3-ba7b-e50e85bc5d90
 
 This repo contains the Lovable-generated MVP for MotionOS — a lightweight demo of how our helpdesk memory layer works. It shows the UI and basic workflow for how support teams get persistent memory, instant recall, and smart context suggestions inside their tools.
 
