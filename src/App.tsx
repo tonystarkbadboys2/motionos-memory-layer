@@ -2,38 +2,35 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/hooks/useAuth";
-import Landing from "./pages/Landing";
-import Auth from "./pages/Auth";
-import Demo from "./pages/Demo";
-import AppPage from "./pages/App";
-import Docs from "./pages/Docs";
-import Pricing from "./pages/Pricing";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import Dashboard from "./pages/Dashboard";
+import Helpdesk from "./pages/Helpdesk";
+import Console from "./pages/Console";
+import Timeline from "./pages/Timeline";
+import Settings from "./pages/Settings";
+import ApiPlayground from "./pages/ApiPlayground";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Landing />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/demo" element={<Demo />} />
-            <Route path="/app" element={<AppPage />} />
-            <Route path="/docs" element={<Docs />} />
-            <Route path="/pricing" element={<Pricing />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/helpdesk" element={<Helpdesk />} />
+          <Route path="/console" element={<Console />} />
+          <Route path="/timeline" element={<Timeline />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/api" element={<ApiPlayground />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
+    </TooltipProvider>
   </QueryClientProvider>
 );
 

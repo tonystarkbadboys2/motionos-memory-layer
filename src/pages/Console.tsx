@@ -1,251 +1,153 @@
-import { useState, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Layout } from "@/components/Layout";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { toast } from "sonner";
-import { memoryStream, MemoryEvent } from "@/utils/memoryStream";
+import { Badge } from "@/components/ui/badge";
+import { Send, Sparkles, User, Bot, Loader2 } from "lucide-react";
 
-interface Memory {
-  id: string;
-  userId: string;
-  sessionId: string;
+interface Message {
+  role: "user" | "assistant";
   content: string;
-  tags: string[];
-  source: string;
-  timestamp: Date;
+  memories?: number;
 }
 
 const Console = () => {
-  const [userId, setUserId] = useState("");
-  const [sessionId, setSessionId] = useState("");
-  const [content, setContent] = useState("");
-  const [tags, setTags] = useState("");
-  const [source, setSource] = useState("");
-  const [memories, setMemories] = useState<Memory[]>([
+  const [messages, setMessages] = useState<Message[]>([
     {
-      id: "mem_001",
-      userId: "user_12345",
-      sessionId: "sess_abc",
-      content: "User prefers dark mode interface",
-      tags: ["preference", "ui"],
-      source: "settings",
-      timestamp: new Date(Date.now() - 1000 * 60 * 5),
-    },
-    {
-      id: "mem_002",
-      userId: "user_12345",
-      sessionId: "sess_abc",
-      content: "Requested help with API integration",
-      tags: ["support", "api"],
-      source: "chat",
-      timestamp: new Date(Date.now() - 1000 * 60 * 15),
-    },
+      role: "assistant",
+      content: "Hello! I'm your MotionOS-powered assistant. I have access to the memory layer, so I can remember context from our conversation and recall relevant information. How can I help you today?",
+      memories: 0
+    }
   ]);
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Start the memory stream
-    memoryStream.start();
-    
-    // Subscribe to new memory events
-    const unsubscribe = memoryStream.subscribe((event: MemoryEvent) => {
-      if (event.type === 'store' && event.content) {
-        const newMemory: Memory = {
-          id: event.id,
-          userId: event.userId,
-          sessionId: event.sessionId || 'default',
-          content: event.content,
-          tags: ['realtime', 'stream'],
-          source: 'websocket',
-          timestamp: event.timestamp,
-        };
-        
-        setMemories(prev => [newMemory, ...prev]);
-        toast.success("New memory received via stream");
-      }
-    });
-    
-    return () => {
-      unsubscribe();
-    };
-  }, []);
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
-  const handleStoreMemory = () => {
-    if (!userId || !content) {
-      toast.error("User ID and Memory content are required");
-      return;
+  const simulateResponse = async (userMessage: string) => {
+    setIsLoading(true);
+    
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    // Demo responses based on keywords
+    let response = "";
+    let memoriesUsed = 0;
+    
+    if (userMessage.toLowerCase().includes("export") || userMessage.toLowerCase().includes("csv")) {
+      response = "Based on the memory context, I can see this customer (Sarah Chen from Acme Corp) has experienced export issues before. Their last export timeout was 3 months ago, which was resolved by increasing the timeout limit. They're on the Pro plan with ~50,000 records. I'd recommend checking if the same timeout issue is occurring.";
+      memoriesUsed = 3;
+    } else if (userMessage.toLowerCase().includes("customer") || userMessage.toLowerCase().includes("history")) {
+      response = "I found 3 relevant memories for this customer:\n\n1. **Account Status**: Pro tier, 2 years active\n2. **Past Issues**: 12 total tickets, 4.8/5 satisfaction\n3. **Preferences**: Prefers detailed technical explanations, responds well to step-by-step guides\n\nTheir most recent interaction was 3 weeks ago regarding dashboard performance.";
+      memoriesUsed = 4;
+    } else if (userMessage.toLowerCase().includes("suggest") || userMessage.toLowerCase().includes("response")) {
+      response = "Based on the context and customer history, here's a suggested response:\n\n*\"Hi [Customer], I can see from our records that you've dealt with a similar issue before. Based on your account's data volume, I'd recommend trying [specific solution]. If that doesn't work, I can escalate this to our engineering team who helped resolve your previous case.\"*\n\nThis incorporates their preference for detailed explanations and references their history.";
+      memoriesUsed = 2;
+    } else {
+      response = "I've processed your request. The MotionOS memory layer allows me to maintain context across conversations and recall relevant information from previous interactions. Is there anything specific about a customer or ticket you'd like me to look up?";
+      memoriesUsed = 1;
     }
-
-    const newMemory: Memory = {
-      id: `mem_${Date.now()}`,
-      userId,
-      sessionId: sessionId || "default",
-      content,
-      tags: tags.split(",").map(t => t.trim()).filter(Boolean),
-      source: source || "console",
-      timestamp: new Date(),
-    };
-
-    setMemories([newMemory, ...memories]);
-    toast.success("Memory stored successfully");
     
-    // Clear form
-    setUserId("");
-    setSessionId("");
-    setContent("");
-    setTags("");
-    setSource("");
+    setMessages(prev => [...prev, {
+      role: "assistant",
+      content: response,
+      memories: memoriesUsed
+    }]);
+    setIsLoading(false);
   };
 
-  const handleClearMemories = () => {
-    setMemories([]);
-    toast.success("All memories cleared");
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || isLoading) return;
+    
+    const userMessage = input.trim();
+    setMessages(prev => [...prev, { role: "user", content: userMessage }]);
+    setInput("");
+    simulateResponse(userMessage);
   };
 
   return (
     <Layout>
-      <div className="space-y-8">
-        <div>
-          <h1 className="text-3xl font-bold font-mono text-foreground">Memory Console</h1>
-          <p className="text-muted-foreground font-mono text-sm mt-1">Store and retrieve memory data</p>
+      <div className="h-[calc(100vh-8rem)] flex flex-col">
+        <div className="mb-4">
+          <h1 className="text-2xl font-bold font-mono text-foreground">AI Console</h1>
+          <p className="text-muted-foreground">Chat with memory-enhanced AI assistant</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Input Form */}
-          <div className="glass-panel rounded-xl p-6">
-            <h2 className="text-xl font-bold font-mono text-foreground mb-6">Store Memory</h2>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="userId" className="font-mono text-sm">User ID *</Label>
-                <Input
-                  id="userId"
-                  value={userId}
-                  onChange={(e) => setUserId(e.target.value)}
-                  placeholder="user_12345"
-                  className="bg-secondary/50 border-border font-mono"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="sessionId" className="font-mono text-sm">Session ID</Label>
-                <Input
-                  id="sessionId"
-                  value={sessionId}
-                  onChange={(e) => setSessionId(e.target.value)}
-                  placeholder="sess_abc123"
-                  className="bg-secondary/50 border-border font-mono"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="content" className="font-mono text-sm">Memory Content *</Label>
-                <Textarea
-                  id="content"
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  placeholder="Enter memory content..."
-                  className="bg-secondary/50 border-border font-mono min-h-[100px]"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="tags" className="font-mono text-sm">Tags (comma separated)</Label>
-                <Input
-                  id="tags"
-                  value={tags}
-                  onChange={(e) => setTags(e.target.value)}
-                  placeholder="preference, api, support"
-                  className="bg-secondary/50 border-border font-mono"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="source" className="font-mono text-sm">Source</Label>
-                <Input
-                  id="source"
-                  value={source}
-                  onChange={(e) => setSource(e.target.value)}
-                  placeholder="chat, api, settings"
-                  className="bg-secondary/50 border-border font-mono"
-                />
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <Button 
-                  onClick={handleStoreMemory}
-                  className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-mono neon-glow"
-                >
-                  Store Memory
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={handleClearMemories}
-                  className="font-mono border-border hover:bg-destructive/10 hover:text-destructive hover:border-destructive/50"
-                >
-                  Clear All
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Memory List */}
-          <div className="glass-panel rounded-xl p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold font-mono text-foreground">Stored Memories</h2>
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-primary animate-pulse-glow"></div>
-                <span className="text-xs font-mono text-primary">Streaming</span>
-              </div>
-            </div>
-            <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
-              {memories.length === 0 ? (
-                <p className="text-muted-foreground font-mono text-sm text-center py-8">
-                  No memories stored yet
-                </p>
-              ) : (
-                memories.map((memory, index) => (
-                  <div
-                    key={memory.id}
-                    className="p-4 rounded-lg bg-secondary/30 border border-border/50 hover:border-primary/30 transition-all animate-slide-in-up"
-                    style={{ animationDelay: `${Math.min(index * 0.05, 0.5)}s` }}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <span className="font-mono text-xs text-primary">{memory.id}</span>
-                      <span className="font-mono text-xs text-muted-foreground">
-                        {memory.timestamp.toLocaleTimeString()}
-                      </span>
-                    </div>
-                    <p className="font-mono text-sm text-foreground mb-2">{memory.content}</p>
-                    <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
-                      <span>User: {memory.userId}</span>
-                      <span>•</span>
-                      <span>Session: {memory.sessionId}</span>
-                      {memory.source && (
-                        <>
-                          <span>•</span>
-                          <span>Source: {memory.source}</span>
-                        </>
-                      )}
-                    </div>
-                    {memory.tags.length > 0 && (
-                      <div className="flex gap-2 mt-2">
-                        {memory.tags.map((tag, i) => (
-                          <span
-                            key={i}
-                            className="px-2 py-1 rounded bg-primary/10 text-primary text-xs font-mono border border-primary/20"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    )}
+        <Card className="glass-panel border-border flex-1 flex flex-col overflow-hidden">
+          <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
+            {messages.map((message, index) => (
+              <div
+                key={index}
+                className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}
+              >
+                {message.role === "assistant" && (
+                  <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center flex-shrink-0">
+                    <Bot className="h-4 w-4 text-primary" />
                   </div>
-                ))
-              )}
-            </div>
+                )}
+                <div className={`max-w-[80%] ${message.role === "user" ? "order-first" : ""}`}>
+                  <div
+                    className={`p-3 rounded-lg ${
+                      message.role === "user"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted/50"
+                    }`}
+                  >
+                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                  </div>
+                  {message.memories !== undefined && message.memories > 0 && (
+                    <div className="mt-1 flex items-center gap-1">
+                      <Badge variant="outline" className="text-xs bg-accent/10 text-accent border-accent/30">
+                        <Sparkles className="h-3 w-3 mr-1" />
+                        {message.memories} memories used
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+                {message.role === "user" && (
+                  <div className="h-8 w-8 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
+                    <User className="h-4 w-4" />
+                  </div>
+                )}
+              </div>
+            ))}
+            
+            {isLoading && (
+              <div className="flex gap-3">
+                <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center">
+                  <Bot className="h-4 w-4 text-primary" />
+                </div>
+                <div className="p-3 rounded-lg bg-muted/50">
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </CardContent>
+
+          <div className="p-4 border-t border-border">
+            <form onSubmit={handleSubmit} className="flex gap-2">
+              <Input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Ask about customer history, suggest responses..."
+                className="flex-1 bg-background/50"
+                disabled={isLoading}
+              />
+              <Button type="submit" disabled={isLoading || !input.trim()}>
+                <Send className="h-4 w-4" />
+              </Button>
+            </form>
+            <p className="text-xs text-muted-foreground mt-2 text-center">
+              Try: "What's this customer's history?" or "Suggest a response for the export issue"
+            </p>
           </div>
-        </div>
+        </Card>
       </div>
     </Layout>
   );
