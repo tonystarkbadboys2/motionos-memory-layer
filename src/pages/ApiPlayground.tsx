@@ -1,243 +1,247 @@
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import { Layout } from "@/components/Layout";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Copy, Check, Play } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Code, Copy, Check, Database, Search, Trash2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import { memoryStream, MemoryEvent } from "@/utils/memoryStream";
 
 const ApiPlayground = () => {
-  const [apiKey, setApiKey] = useState("sk_test_4eC39HqLyjWDarjtT1zdp7dc");
-  const [copied, setCopied] = useState<string | null>(null);
-  const [apiCallCount, setApiCallCount] = useState(0);
-  const [lastResponse, setLastResponse] = useState<any>(null);
-  const [isExecuting, setIsExecuting] = useState(false);
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
-  useEffect(() => {
-    memoryStream.start();
-    
-    const unsubscribe = memoryStream.subscribe((event: MemoryEvent) => {
-      setApiCallCount(prev => prev + 1);
-    });
-    
-    return () => {
-      unsubscribe();
-    };
-  }, []);
-
-  const copyToClipboard = (text: string, id: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied(id);
+  const copyToClipboard = (code: string, index: number) => {
+    navigator.clipboard.writeText(code);
+    setCopiedIndex(index);
     toast.success("Copied to clipboard");
-    setTimeout(() => setCopied(null), 2000);
+    setTimeout(() => setCopiedIndex(null), 2000);
   };
 
-  const executeApiCall = (exampleId: string) => {
-    setIsExecuting(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      const timestamp = new Date().toISOString();
-      const mockResponse = {
-        status: "success",
-        data: {
-          memory_id: `mem_${Date.now()}`,
-          user_id: "user_12345",
-          session_id: "sess_abc123",
-          content: exampleId === 'store' ? "User prefers dark mode" : "Retrieved memory data",
-          tags: ["preference", "ui"],
-          created_at: timestamp,
-          expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-        }
-      };
-      
-      setLastResponse(mockResponse);
-      setApiCallCount(prev => prev + 1);
-      setIsExecuting(false);
-      toast.success(`API call executed: ${exampleId}`);
-    }, 1200);
-  };
-
-  const codeExamples = [
+  const examples = [
     {
-      id: "store",
       title: "Store Memory",
+      description: "Persist a new memory to the user's memory store",
       method: "POST",
-      endpoint: "/api/v1/memory/store",
-      code: `curl -X POST https://api.motionos.dev/v1/memory/store \\
+      endpoint: "/v1/memory/store",
+      icon: Database,
+      code: `curl -X POST https://api.motionos.ai/v1/memory/store \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
-    "user_id": "user_12345",
-    "session_id": "sess_abc123",
-    "content": "User prefers dark mode",
-    "tags": ["preference", "ui"],
-    "source": "settings"
+    "user_id": "user_123",
+    "content": "Customer prefers email communication",
+    "tags": ["preference", "communication"],
+    "metadata": {
+      "source": "support_ticket",
+      "ticket_id": "TKT-4892",
+      "importance": 0.85
+    }
   }'`,
+      response: `{
+  "success": true,
+  "memory": {
+    "id": "mem_abc123",
+    "user_id": "user_123",
+    "content": "Customer prefers email communication",
+    "tags": ["preference", "communication"],
+    "strength": 1.0,
+    "created_at": "2024-01-15T14:32:18Z"
+  }
+}`
     },
     {
-      id: "retrieve",
-      title: "Retrieve Memory",
-      method: "GET",
-      endpoint: "/api/v1/memory/retrieve",
-      code: `curl -X GET https://api.motionos.dev/v1/memory/retrieve \\
+      title: "Retrieve Memories",
+      description: "Query memories with filtering and relevance scoring",
+      method: "POST",
+      endpoint: "/v1/memory/retrieve",
+      icon: Search,
+      code: `curl -X POST https://api.motionos.ai/v1/memory/retrieve \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
-  -G \\
-  -d "user_id=user_12345" \\
-  -d "session_id=sess_abc123"`,
+  -H "Content-Type: application/json" \\
+  -d '{
+    "user_id": "user_123",
+    "query": "What are the customer communication preferences?",
+    "limit": 5,
+    "min_strength": 0.3,
+    "tags": ["preference"]
+  }'`,
+      response: `{
+  "success": true,
+  "memories": [
+    {
+      "id": "mem_abc123",
+      "content": "Customer prefers email communication",
+      "relevance": 0.94,
+      "strength": 0.87,
+      "tags": ["preference", "communication"],
+      "created_at": "2024-01-15T14:32:18Z"
     },
     {
-      id: "delete",
-      title: "Clear User Memory",
+      "id": "mem_def456",
+      "content": "Responds best to detailed explanations",
+      "relevance": 0.72,
+      "strength": 0.65,
+      "tags": ["preference", "support"],
+      "created_at": "2024-01-10T09:15:00Z"
+    }
+  ],
+  "query_time_ms": 45
+}`
+    },
+    {
+      title: "Clear Memories",
+      description: "Delete memories by user, tags, or time range",
       method: "DELETE",
-      endpoint: "/api/v1/memory/clear",
-      code: `curl -X DELETE https://api.motionos.dev/v1/memory/clear \\
+      endpoint: "/v1/memory/clear",
+      icon: Trash2,
+      code: `curl -X DELETE https://api.motionos.ai/v1/memory/clear \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
-  -d "user_id=user_12345"`,
+  -H "Content-Type: application/json" \\
+  -d '{
+    "user_id": "user_123",
+    "tags": ["temporary"],
+    "older_than": "2024-01-01T00:00:00Z"
+  }'`,
+      response: `{
+  "success": true,
+  "deleted_count": 12,
+  "message": "Successfully cleared 12 memories matching criteria"
+}`
     },
+    {
+      title: "Chat with Memory",
+      description: "AI chat that automatically retrieves relevant context",
+      method: "POST",
+      endpoint: "/v1/chat",
+      icon: Sparkles,
+      code: `curl -X POST https://api.motionos.ai/v1/chat \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "user_id": "user_123",
+    "message": "What issues has this customer had before?",
+    "session_id": "session_xyz",
+    "store_response": true
+  }'`,
+      response: `{
+  "success": true,
+  "response": "Based on their history, this customer has had 3 previous issues: export timeouts (resolved by increasing limits), CSV encoding problems (fixed with UTF-8), and dashboard performance (cache optimization applied). They're on the Pro plan and generally satisfied.",
+  "memories_used": 3,
+  "confidence": 0.92,
+  "tokens_used": 245
+}`
+    }
   ];
 
   return (
     <Layout>
-      <div className="space-y-8">
+      <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold font-mono text-foreground">API Playground</h1>
-          <p className="text-muted-foreground font-mono text-sm mt-1">
-            Test MotionOS Memory Layer API endpoints
-          </p>
+          <h1 className="text-2xl font-bold font-mono text-foreground">API Preview</h1>
+          <p className="text-muted-foreground mt-1">Explore the MotionOS API with example requests and responses</p>
         </div>
 
-        {/* API Key Section */}
-        <div className="glass-panel rounded-xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold font-mono text-foreground">API Key</h2>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-primary animate-pulse-glow"></div>
-              <span className="text-xs font-mono text-primary">{apiCallCount} calls today</span>
+        {/* Quick Reference */}
+        <Card className="glass-panel border-primary/30">
+          <CardContent className="p-4">
+            <div className="flex flex-wrap items-center gap-4">
+              <span className="text-sm text-muted-foreground">Base URL:</span>
+              <code className="px-2 py-1 rounded bg-muted font-mono text-sm text-primary">
+                https://api.motionos.ai
+              </code>
+              <span className="text-sm text-muted-foreground ml-4">Auth:</span>
+              <code className="px-2 py-1 rounded bg-muted font-mono text-sm">
+                Bearer YOUR_API_KEY
+              </code>
             </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="apiKey" className="font-mono text-sm">
-              Your API Key
-            </Label>
-            <div className="flex gap-2">
-              <Input
-                id="apiKey"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                className="bg-secondary/50 border-border font-mono"
-                type="password"
-              />
-              <Button
-                variant="outline"
-                onClick={() => copyToClipboard(apiKey, "apiKey")}
-                className="font-mono border-border"
-              >
-                {copied === "apiKey" ? (
-                  <Check className="h-4 w-4" />
-                ) : (
-                  <Copy className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
-            <p className="text-xs font-mono text-muted-foreground">
-              This is a demo key. Replace with your production key.
-            </p>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
-        {/* Code Examples */}
+        {/* API Examples */}
         <div className="space-y-6">
-          {codeExamples.map((example) => (
-            <div key={example.id} className="glass-panel rounded-xl p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h3 className="text-lg font-bold font-mono text-foreground">
+          {examples.map((example, index) => (
+            <Card key={example.title} className="glass-panel border-border overflow-hidden">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <example.icon className="h-4 w-4 text-primary" />
+                    </div>
                     {example.title}
-                  </h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span
-                      className={`px-2 py-0.5 rounded text-xs font-mono ${
-                        example.method === "POST"
-                          ? "bg-primary/10 text-primary border border-primary/20"
-                          : example.method === "GET"
-                          ? "bg-accent/10 text-accent border border-accent/20"
-                          : "bg-destructive/10 text-destructive border border-destructive/20"
-                      }`}
-                    >
+                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    <Badge className={`font-mono ${
+                      example.method === "POST" ? "bg-green-500/20 text-green-400" :
+                      example.method === "DELETE" ? "bg-destructive/20 text-destructive" :
+                      "bg-primary/20 text-primary"
+                    }`}>
                       {example.method}
-                    </span>
-                    <span className="font-mono text-xs text-muted-foreground">
-                      {example.endpoint}
-                    </span>
+                    </Badge>
+                    <code className="text-sm font-mono text-muted-foreground">{example.endpoint}</code>
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => executeApiCall(example.id)}
-                    disabled={isExecuting}
-                    className="font-mono border-border bg-primary/10 hover:bg-primary/20"
-                  >
-                    <Play className="h-4 w-4 mr-1" />
-                    {isExecuting ? "Running..." : "Execute"}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => copyToClipboard(example.code, example.id)}
-                    className="font-mono border-border"
-                  >
-                    {copied === example.id ? (
-                      <Check className="h-4 w-4" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-              </div>
-              <div className="bg-background/50 rounded-lg p-4 border border-border/50">
-                <pre className="text-xs font-mono text-foreground overflow-x-auto">
-                  <code>{example.code}</code>
-                </pre>
-              </div>
-            </div>
+                <p className="text-sm text-muted-foreground">{example.description}</p>
+              </CardHeader>
+              <CardContent className="p-0">
+                <Tabs defaultValue="request" className="w-full">
+                  <div className="px-6 border-b border-border">
+                    <TabsList className="bg-transparent h-10 p-0 gap-4">
+                      <TabsTrigger value="request" className="data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0">
+                        Request
+                      </TabsTrigger>
+                      <TabsTrigger value="response" className="data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0">
+                        Response
+                      </TabsTrigger>
+                    </TabsList>
+                  </div>
+                  
+                  <TabsContent value="request" className="m-0">
+                    <div className="relative">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="absolute top-2 right-2 z-10"
+                        onClick={() => copyToClipboard(example.code, index)}
+                      >
+                        {copiedIndex === index ? (
+                          <Check className="h-4 w-4 text-green-400" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                      </Button>
+                      <pre className="p-4 overflow-x-auto text-sm bg-background/50">
+                        <code className="text-foreground/90">{example.code}</code>
+                      </pre>
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="response" className="m-0">
+                    <pre className="p-4 overflow-x-auto text-sm bg-background/50">
+                      <code className="text-primary/90">{example.response}</code>
+                    </pre>
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
           ))}
         </div>
 
-        {/* Live Response */}
-        <div className="glass-panel rounded-xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold font-mono text-foreground">
-              {lastResponse ? "Live Response" : "Example Response"}
-            </h3>
-            {lastResponse && (
-              <span className="text-xs font-mono text-primary animate-pulse-glow">
-                ● Just executed
-              </span>
-            )}
-          </div>
-          <div className="bg-background/50 rounded-lg p-4 border border-border/50">
-            <pre className="text-xs font-mono text-foreground overflow-x-auto">
-              <code>
-                {lastResponse ? JSON.stringify(lastResponse, null, 2) : `{
-  "status": "success",
-  "data": {
-    "memory_id": "mem_a1b2c3d4",
-    "user_id": "user_12345",
-    "session_id": "sess_abc123",
-    "content": "User prefers dark mode",
-    "tags": ["preference", "ui"],
-    "created_at": "2024-01-20T10:30:00Z",
-    "expires_at": "2024-02-20T10:30:00Z"
-  }
-}`}
-              </code>
-            </pre>
-          </div>
-        </div>
+        {/* SDKs Coming Soon */}
+        <Card className="glass-panel border-accent/30">
+          <CardContent className="p-6 text-center">
+            <Code className="h-8 w-8 text-accent mx-auto mb-3" />
+            <h3 className="font-semibold mb-1">SDKs Coming Soon</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Official SDKs for Python, Node.js, and Go are in development
+            </p>
+            <div className="flex justify-center gap-2">
+              <Badge variant="outline">Python</Badge>
+              <Badge variant="outline">Node.js</Badge>
+              <Badge variant="outline">Go</Badge>
+              <Badge variant="outline">Ruby</Badge>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </Layout>
   );

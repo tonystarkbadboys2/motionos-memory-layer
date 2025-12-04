@@ -1,170 +1,218 @@
-import { useEffect, useState } from "react";
 import { Layout } from "@/components/Layout";
-import { cn } from "@/lib/utils";
-import { memoryStream, MemoryEvent } from "@/utils/memoryStream";
-
-interface TimelineItem {
-  id: string;
-  time: string;
-  content: string;
-  decay: number;
-  age: number; // in milliseconds
-}
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Search, Filter, Download, Clock, Sparkles } from "lucide-react";
 
 const Timeline = () => {
-  const [timelineData, setTimelineData] = useState<TimelineItem[]>([
-    { id: "1", time: "Just now", content: "API integration completed", decay: 0, age: 0 },
-    { id: "2", time: "5 min ago", content: "User preferences updated", decay: 10, age: 5 * 60 * 1000 },
-    { id: "3", time: "15 min ago", content: "Support ticket resolved", decay: 20, age: 15 * 60 * 1000 },
-    { id: "4", time: "1 hour ago", content: "Database schema modified", decay: 40, age: 60 * 60 * 1000 },
-    { id: "5", time: "3 hours ago", content: "Authentication flow tested", decay: 60, age: 3 * 60 * 60 * 1000 },
-    { id: "6", time: "6 hours ago", content: "Payment integration configured", decay: 75, age: 6 * 60 * 60 * 1000 },
-    { id: "7", time: "12 hours ago", content: "Email templates created", decay: 85, age: 12 * 60 * 60 * 1000 },
-    { id: "8", time: "1 day ago", content: "Project kickoff meeting", decay: 90, age: 24 * 60 * 60 * 1000 },
-  ]);
+  const events = [
+    {
+      id: "evt_001",
+      event: "Customer reported export timeout issue",
+      timestamp: "2024-01-15 14:32:18",
+      recency: 0.98,
+      importance: 0.92,
+      source: "ticket",
+      tags: ["export", "technical"]
+    },
+    {
+      id: "evt_002", 
+      event: "Account upgraded to Pro tier",
+      timestamp: "2024-01-10 09:15:00",
+      recency: 0.85,
+      importance: 0.78,
+      source: "billing",
+      tags: ["account", "upgrade"]
+    },
+    {
+      id: "evt_003",
+      event: "Resolved CSV encoding issue - UTF-8 fix applied",
+      timestamp: "2023-12-20 16:45:33",
+      recency: 0.72,
+      importance: 0.88,
+      source: "resolution",
+      tags: ["export", "resolved"]
+    },
+    {
+      id: "evt_004",
+      event: "Customer praised quick response time",
+      timestamp: "2023-12-18 11:20:00",
+      recency: 0.70,
+      importance: 0.65,
+      source: "feedback",
+      tags: ["positive", "csat"]
+    },
+    {
+      id: "evt_005",
+      event: "Large dataset warning triggered (50K+ records)",
+      timestamp: "2023-11-05 13:55:42",
+      recency: 0.58,
+      importance: 0.95,
+      source: "system",
+      tags: ["warning", "data"]
+    },
+    {
+      id: "evt_006",
+      event: "Initial onboarding completed",
+      timestamp: "2023-08-22 10:00:00",
+      recency: 0.35,
+      importance: 0.60,
+      source: "onboarding",
+      tags: ["new-customer"]
+    },
+    {
+      id: "evt_007",
+      event: "API integration enabled for workspace",
+      timestamp: "2023-09-15 14:22:11",
+      recency: 0.42,
+      importance: 0.75,
+      source: "settings",
+      tags: ["api", "integration"]
+    },
+    {
+      id: "evt_008",
+      event: "Dashboard performance issue reported",
+      timestamp: "2023-10-01 09:30:00",
+      recency: 0.48,
+      importance: 0.82,
+      source: "ticket",
+      tags: ["performance", "technical"]
+    }
+  ];
 
-  useEffect(() => {
-    memoryStream.start();
-    
-    const unsubscribe = memoryStream.subscribe((event: MemoryEvent) => {
-      if (event.content) {
-        const newItem: TimelineItem = {
-          id: event.id,
-          time: "Just now",
-          content: event.content,
-          decay: 0,
-          age: 0,
-        };
-        
-        setTimelineData(prev => [newItem, ...prev.slice(0, 15)]);
-      }
-    });
+  const getScoreColor = (score: number) => {
+    if (score >= 0.8) return "text-primary";
+    if (score >= 0.5) return "text-accent";
+    return "text-muted-foreground";
+  };
 
-    // Update decay values over time
-    const decayInterval = setInterval(() => {
-      setTimelineData(prev => prev.map(item => {
-        const newAge = item.age + 1000;
-        const hoursOld = newAge / (1000 * 60 * 60);
-        const newDecay = Math.min(90, Math.floor((hoursOld / 24) * 90));
-        
-        // Update time labels
-        let timeLabel = "Just now";
-        if (hoursOld >= 24) {
-          timeLabel = `${Math.floor(hoursOld / 24)} day${Math.floor(hoursOld / 24) > 1 ? 's' : ''} ago`;
-        } else if (hoursOld >= 1) {
-          timeLabel = `${Math.floor(hoursOld)} hour${Math.floor(hoursOld) > 1 ? 's' : ''} ago`;
-        } else if (newAge >= 60000) {
-          timeLabel = `${Math.floor(newAge / 60000)} min ago`;
-        }
-        
-        return { ...item, age: newAge, decay: newDecay, time: timeLabel };
-      }));
-    }, 1000);
-    
-    return () => {
-      unsubscribe();
-      clearInterval(decayInterval);
+  const getSourceBadge = (source: string) => {
+    const colors: Record<string, string> = {
+      ticket: "bg-destructive/20 text-destructive border-destructive/30",
+      billing: "bg-primary/20 text-primary border-primary/30",
+      resolution: "bg-green-500/20 text-green-400 border-green-500/30",
+      feedback: "bg-accent/20 text-accent border-accent/30",
+      system: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+      onboarding: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+      settings: "bg-muted text-muted-foreground border-border"
     };
-  }, []);
+    return colors[source] || "bg-muted text-muted-foreground";
+  };
 
   return (
     <Layout>
-      <div className="space-y-8">
+      <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold font-mono text-foreground">Memory Timeline</h1>
-            <p className="text-muted-foreground font-mono text-sm mt-1">
-              Visualize memory decay over time
-            </p>
+            <h1 className="text-2xl font-bold font-mono text-foreground">Memory Events</h1>
+            <p className="text-muted-foreground mt-1">Browse and analyze stored memory events</p>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-primary animate-pulse-glow"></div>
-            <span className="text-xs font-mono text-primary">Live Updates</span>
+            <Button variant="outline" size="sm">
+              <Filter className="h-4 w-4 mr-1" /> Filter
+            </Button>
+            <Button variant="outline" size="sm">
+              <Download className="h-4 w-4 mr-1" /> Export
+            </Button>
           </div>
         </div>
 
-        <div className="glass-panel rounded-xl p-8">
-          <div className="relative">
-            {/* Timeline line */}
-            <div className="absolute left-8 top-0 bottom-0 w-px bg-gradient-to-b from-primary via-primary/50 to-primary/10"></div>
-
-            {/* Timeline items */}
-            <div className="space-y-6">
-              {timelineData.map((item, index) => (
-                <div key={item.id} className="relative pl-16 group">
-                  {/* Timeline dot */}
-                  <div
-                    className={cn(
-                      "absolute left-6 w-5 h-5 rounded-full border-2 transition-all duration-1000",
-                      item.decay < 30
-                        ? "bg-primary border-primary animate-pulse-glow"
-                        : item.decay < 70
-                        ? "bg-primary/60 border-primary/60"
-                        : "bg-primary/20 border-primary/20"
-                    )}
-                  ></div>
-
-                  {/* Content */}
-                  <div
-                    className={cn(
-                      "glass-panel rounded-lg p-4 transition-all duration-1000 group-hover:border-primary/30",
-                      item.decay < 30
-                        ? "opacity-100 animate-slide-in-up"
-                        : item.decay < 70
-                        ? "opacity-70"
-                        : "opacity-40"
-                    )}
-                    style={index === 0 ? {} : { animationDelay: `${index * 0.05}s` }}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <p
-                        className={cn(
-                          "font-mono text-sm",
-                          item.decay < 30
-                            ? "text-foreground"
-                            : item.decay < 70
-                            ? "text-foreground/80"
-                            : "text-muted-foreground"
-                        )}
-                      >
-                        {item.content}
-                      </p>
-                      <span className="font-mono text-xs text-muted-foreground whitespace-nowrap ml-4">
-                        {item.time}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
-                        <div
-                          className={cn(
-                            "h-full transition-all duration-1000",
-                            item.decay < 30
-                              ? "bg-primary neon-glow"
-                              : item.decay < 70
-                              ? "bg-primary/60"
-                              : "bg-primary/20"
-                          )}
-                          style={{ width: `${100 - item.decay}%` }}
-                        ></div>
-                      </div>
-                      <span className="font-mono text-xs text-muted-foreground">
-                        {100 - item.decay}%
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
+        <Card className="glass-panel border-border">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  placeholder="Search events..." 
+                  className="pl-9 bg-background/50"
+                />
+              </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Clock className="h-4 w-4" />
+                <span>{events.length} events</span>
+              </div>
             </div>
-          </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-border hover:bg-transparent">
+                  <TableHead className="font-mono text-xs">EVENT</TableHead>
+                  <TableHead className="font-mono text-xs">TIMESTAMP</TableHead>
+                  <TableHead className="font-mono text-xs text-center">RECENCY</TableHead>
+                  <TableHead className="font-mono text-xs text-center">IMPORTANCE</TableHead>
+                  <TableHead className="font-mono text-xs">SOURCE</TableHead>
+                  <TableHead className="font-mono text-xs">TAGS</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {events.map((event) => (
+                  <TableRow key={event.id} className="border-border hover:bg-muted/30 cursor-pointer">
+                    <TableCell className="max-w-[300px]">
+                      <p className="truncate">{event.event}</p>
+                    </TableCell>
+                    <TableCell className="font-mono text-sm text-muted-foreground whitespace-nowrap">
+                      {event.timestamp}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <span className={`font-mono font-medium ${getScoreColor(event.recency)}`}>
+                        {event.recency.toFixed(2)}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <span className={`font-mono font-medium ${getScoreColor(event.importance)}`}>
+                        {event.importance.toFixed(2)}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={`text-xs ${getSourceBadge(event.source)}`}>
+                        {event.source}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        {event.tags.slice(0, 2).map((tag) => (
+                          <Badge key={tag} variant="secondary" className="text-xs">
+                            {tag}
+                          </Badge>
+                        ))}
+                        {event.tags.length > 2 && (
+                          <Badge variant="secondary" className="text-xs">
+                            +{event.tags.length - 2}
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
 
-          <div className="mt-8 p-4 rounded-lg bg-secondary/30 border border-border/50">
-            <p className="font-mono text-xs text-muted-foreground">
-              <span className="text-primary">Memory Decay:</span> Older memories gradually fade,
-              representing natural information decay. Strength indicator shows memory retention
-              percentage.
-            </p>
-          </div>
-        </div>
+        {/* Score Legend */}
+        <Card className="glass-panel border-border">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center gap-6">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  <span className="text-muted-foreground">Score Legend:</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span><span className="text-primary font-mono">0.8+</span> High</span>
+                  <span><span className="text-accent font-mono">0.5-0.8</span> Medium</span>
+                  <span><span className="text-muted-foreground font-mono">&lt;0.5</span> Low</span>
+                </div>
+              </div>
+              <p className="text-muted-foreground text-xs">
+                Scores combine time decay and contextual relevance
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </Layout>
   );
