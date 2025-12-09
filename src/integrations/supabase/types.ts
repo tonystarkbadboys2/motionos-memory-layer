@@ -49,48 +49,130 @@ export type Database = {
       }
       memories: {
         Row: {
+          confidence: number | null
           content: string
           created_at: string
           decay_rate: number | null
           expires_at: string | null
           id: string
+          importance: number | null
+          is_redacted: boolean | null
+          is_verified: boolean | null
+          linked_ticket_id: string | null
           metadata: Json | null
+          parent_memory_id: string | null
+          redacted_at: string | null
+          redacted_by: string | null
           session_id: string | null
           source: string | null
           strength: number | null
           tags: string[] | null
           updated_at: string
           user_id: string
+          verified_at: string | null
+          verified_by: string | null
         }
         Insert: {
+          confidence?: number | null
           content: string
           created_at?: string
           decay_rate?: number | null
           expires_at?: string | null
           id?: string
+          importance?: number | null
+          is_redacted?: boolean | null
+          is_verified?: boolean | null
+          linked_ticket_id?: string | null
           metadata?: Json | null
+          parent_memory_id?: string | null
+          redacted_at?: string | null
+          redacted_by?: string | null
           session_id?: string | null
           source?: string | null
           strength?: number | null
           tags?: string[] | null
           updated_at?: string
           user_id: string
+          verified_at?: string | null
+          verified_by?: string | null
         }
         Update: {
+          confidence?: number | null
           content?: string
           created_at?: string
           decay_rate?: number | null
           expires_at?: string | null
           id?: string
+          importance?: number | null
+          is_redacted?: boolean | null
+          is_verified?: boolean | null
+          linked_ticket_id?: string | null
           metadata?: Json | null
+          parent_memory_id?: string | null
+          redacted_at?: string | null
+          redacted_by?: string | null
           session_id?: string | null
           source?: string | null
           strength?: number | null
           tags?: string[] | null
           updated_at?: string
           user_id?: string
+          verified_at?: string | null
+          verified_by?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "memories_parent_memory_id_fkey"
+            columns: ["parent_memory_id"]
+            isOneToOne: false
+            referencedRelation: "memories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      memory_audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          ip_address: string | null
+          memory_id: string
+          new_content: string | null
+          previous_content: string | null
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          memory_id: string
+          new_content?: string | null
+          previous_content?: string | null
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          memory_id?: string
+          new_content?: string | null
+          previous_content?: string | null
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memory_audit_logs_memory_id_fkey"
+            columns: ["memory_id"]
+            isOneToOne: false
+            referencedRelation: "memories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       memory_sessions: {
         Row: {
